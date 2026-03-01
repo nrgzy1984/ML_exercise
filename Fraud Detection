@@ -1,0 +1,852 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "788bab83",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004192,
+     "end_time": "2026-03-01T22:23:04.056433",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:04.052241",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# ENV SETUP"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "ce4c70c5",
+   "metadata": {
+    "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+    "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:23:04.064466Z",
+     "iopub.status.busy": "2026-03-01T22:23:04.064118Z",
+     "iopub.status.idle": "2026-03-01T22:23:05.077567Z",
+     "shell.execute_reply": "2026-03-01T22:23:05.076521Z"
+    },
+    "papermill": {
+     "duration": 1.019978,
+     "end_time": "2026-03-01T22:23:05.079611",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:04.059633",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/kaggle/input/credit-card-fraud/card_transdata.csv\n"
+     ]
+    }
+   ],
+   "source": [
+    "# This Python 3 environment comes with many helpful analytics libraries installed\n",
+    "# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n",
+    "# For example, here's several helpful packages to load\n",
+    "\n",
+    "import numpy as np # linear algebra\n",
+    "import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n",
+    "\n",
+    "# Input data files are available in the read-only \"../input/\" directory\n",
+    "# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n",
+    "\n",
+    "import os\n",
+    "for dirname, _, filenames in os.walk('/kaggle/input'):\n",
+    "    for filename in filenames:\n",
+    "        print(os.path.join(dirname, filename))\n",
+    "\n",
+    "# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n",
+    "# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "758c49ad",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003021,
+     "end_time": "2026-03-01T22:23:05.086080",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:05.083059",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# IMPORT DATA"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "75fd588f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:23:05.094111Z",
+     "iopub.status.busy": "2026-03-01T22:23:05.093645Z",
+     "iopub.status.idle": "2026-03-01T22:23:07.731684Z",
+     "shell.execute_reply": "2026-03-01T22:23:07.730742Z"
+    },
+    "papermill": {
+     "duration": 2.644764,
+     "end_time": "2026-03-01T22:23:07.733870",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:05.089106",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "   distance_from_home  distance_from_last_transaction  \\\n",
+      "0           57.877857                        0.311140   \n",
+      "1           10.829943                        0.175592   \n",
+      "2            5.091079                        0.805153   \n",
+      "3            2.247564                        5.600044   \n",
+      "4           44.190936                        0.566486   \n",
+      "\n",
+      "   ratio_to_median_purchase_price  repeat_retailer  used_chip  \\\n",
+      "0                        1.945940              1.0        1.0   \n",
+      "1                        1.294219              1.0        0.0   \n",
+      "2                        0.427715              1.0        0.0   \n",
+      "3                        0.362663              1.0        1.0   \n",
+      "4                        2.222767              1.0        1.0   \n",
+      "\n",
+      "   used_pin_number  online_order  fraud  \n",
+      "0              0.0           0.0    0.0  \n",
+      "1              0.0           0.0    0.0  \n",
+      "2              0.0           1.0    0.0  \n",
+      "3              0.0           1.0    0.0  \n",
+      "4              0.0           1.0    0.0  \n"
+     ]
+    }
+   ],
+   "source": [
+    "# Install dependencies as needed:\n",
+    "# pip install kagglehub[pandas-datasets]\n",
+    "import kagglehub\n",
+    "from kagglehub import KaggleDatasetAdapter\n",
+    "\n",
+    "# Set the path to the file you'd like to load\n",
+    "file_path = \"card_transdata.csv\"\n",
+    "\n",
+    "# Load the latest version\n",
+    "df = kagglehub.dataset_load(\n",
+    "  KaggleDatasetAdapter.PANDAS,\n",
+    "  \"dhanushnarayananr/credit-card-fraud\",\n",
+    "  file_path,\n",
+    "  # Provide any additional arguments like \n",
+    "  # sql_query or pandas_kwargs. See the \n",
+    "  # documenation for more information:\n",
+    "  # https://github.com/Kaggle/kagglehub/blob/main/README.md#kaggledatasetadapterpandas\n",
+    ")\n",
+    "\n",
+    "print(df.head())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a783b3b9",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003076,
+     "end_time": "2026-03-01T22:23:07.740392",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:07.737316",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# DATA SANITY CHECK"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "332db4c0",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:23:07.748499Z",
+     "iopub.status.busy": "2026-03-01T22:23:07.747748Z",
+     "iopub.status.idle": "2026-03-01T22:23:07.787114Z",
+     "shell.execute_reply": "2026-03-01T22:23:07.786096Z"
+    },
+    "papermill": {
+     "duration": 0.045707,
+     "end_time": "2026-03-01T22:23:07.789177",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:07.743470",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 1000000 entries, 0 to 999999\n",
+      "Data columns (total 8 columns):\n",
+      " #   Column                          Non-Null Count    Dtype  \n",
+      "---  ------                          --------------    -----  \n",
+      " 0   distance_from_home              1000000 non-null  float64\n",
+      " 1   distance_from_last_transaction  1000000 non-null  float64\n",
+      " 2   ratio_to_median_purchase_price  1000000 non-null  float64\n",
+      " 3   repeat_retailer                 1000000 non-null  float64\n",
+      " 4   used_chip                       1000000 non-null  float64\n",
+      " 5   used_pin_number                 1000000 non-null  float64\n",
+      " 6   online_order                    1000000 non-null  float64\n",
+      " 7   fraud                           1000000 non-null  float64\n",
+      "dtypes: float64(8)\n",
+      "memory usage: 61.0 MB\n"
+     ]
+    }
+   ],
+   "source": [
+    "# get the dataset information\n",
+    "df.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "530606cc",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:23:07.797627Z",
+     "iopub.status.busy": "2026-03-01T22:23:07.797275Z",
+     "iopub.status.idle": "2026-03-01T22:23:08.169358Z",
+     "shell.execute_reply": "2026-03-01T22:23:08.168408Z"
+    },
+    "papermill": {
+     "duration": 0.378651,
+     "end_time": "2026-03-01T22:23:08.171462",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:07.792811",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>distance_from_home</th>\n",
+       "      <th>distance_from_last_transaction</th>\n",
+       "      <th>ratio_to_median_purchase_price</th>\n",
+       "      <th>repeat_retailer</th>\n",
+       "      <th>used_chip</th>\n",
+       "      <th>used_pin_number</th>\n",
+       "      <th>online_order</th>\n",
+       "      <th>fraud</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>count</th>\n",
+       "      <td>1000000.000000</td>\n",
+       "      <td>1000000.000000</td>\n",
+       "      <td>1000000.000000</td>\n",
+       "      <td>1000000.000000</td>\n",
+       "      <td>1000000.000000</td>\n",
+       "      <td>1000000.000000</td>\n",
+       "      <td>1000000.000000</td>\n",
+       "      <td>1000000.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>mean</th>\n",
+       "      <td>26.628792</td>\n",
+       "      <td>5.036519</td>\n",
+       "      <td>1.824182</td>\n",
+       "      <td>0.881536</td>\n",
+       "      <td>0.350399</td>\n",
+       "      <td>0.100608</td>\n",
+       "      <td>0.650552</td>\n",
+       "      <td>0.087403</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>std</th>\n",
+       "      <td>65.390784</td>\n",
+       "      <td>25.843093</td>\n",
+       "      <td>2.799589</td>\n",
+       "      <td>0.323157</td>\n",
+       "      <td>0.477095</td>\n",
+       "      <td>0.300809</td>\n",
+       "      <td>0.476796</td>\n",
+       "      <td>0.282425</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>min</th>\n",
+       "      <td>0.004874</td>\n",
+       "      <td>0.000118</td>\n",
+       "      <td>0.004399</td>\n",
+       "      <td>0.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>25%</th>\n",
+       "      <td>3.878008</td>\n",
+       "      <td>0.296671</td>\n",
+       "      <td>0.475673</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>50%</th>\n",
+       "      <td>9.967760</td>\n",
+       "      <td>0.998650</td>\n",
+       "      <td>0.997717</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>75%</th>\n",
+       "      <td>25.743985</td>\n",
+       "      <td>3.355748</td>\n",
+       "      <td>2.096370</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>0.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>max</th>\n",
+       "      <td>10632.723672</td>\n",
+       "      <td>11851.104565</td>\n",
+       "      <td>267.802942</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>1.000000</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "       distance_from_home  distance_from_last_transaction  \\\n",
+       "count      1000000.000000                  1000000.000000   \n",
+       "mean            26.628792                        5.036519   \n",
+       "std             65.390784                       25.843093   \n",
+       "min              0.004874                        0.000118   \n",
+       "25%              3.878008                        0.296671   \n",
+       "50%              9.967760                        0.998650   \n",
+       "75%             25.743985                        3.355748   \n",
+       "max          10632.723672                    11851.104565   \n",
+       "\n",
+       "       ratio_to_median_purchase_price  repeat_retailer       used_chip  \\\n",
+       "count                  1000000.000000   1000000.000000  1000000.000000   \n",
+       "mean                         1.824182         0.881536        0.350399   \n",
+       "std                          2.799589         0.323157        0.477095   \n",
+       "min                          0.004399         0.000000        0.000000   \n",
+       "25%                          0.475673         1.000000        0.000000   \n",
+       "50%                          0.997717         1.000000        0.000000   \n",
+       "75%                          2.096370         1.000000        1.000000   \n",
+       "max                        267.802942         1.000000        1.000000   \n",
+       "\n",
+       "       used_pin_number    online_order           fraud  \n",
+       "count   1000000.000000  1000000.000000  1000000.000000  \n",
+       "mean          0.100608        0.650552        0.087403  \n",
+       "std           0.300809        0.476796        0.282425  \n",
+       "min           0.000000        0.000000        0.000000  \n",
+       "25%           0.000000        0.000000        0.000000  \n",
+       "50%           0.000000        1.000000        0.000000  \n",
+       "75%           0.000000        1.000000        0.000000  \n",
+       "max           1.000000        1.000000        1.000000  "
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# numeric variables statistics\n",
+    "df.describe()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "36a499ef",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:23:08.181045Z",
+     "iopub.status.busy": "2026-03-01T22:23:08.180549Z",
+     "iopub.status.idle": "2026-03-01T22:23:08.201909Z",
+     "shell.execute_reply": "2026-03-01T22:23:08.200687Z"
+    },
+    "papermill": {
+     "duration": 0.028661,
+     "end_time": "2026-03-01T22:23:08.204013",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:08.175352",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "distance_from_home                0\n",
+       "distance_from_last_transaction    0\n",
+       "ratio_to_median_purchase_price    0\n",
+       "repeat_retailer                   0\n",
+       "used_chip                         0\n",
+       "used_pin_number                   0\n",
+       "online_order                      0\n",
+       "fraud                             0\n",
+       "dtype: int64"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.isnull().sum()\n",
+    "# no missing value"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "74ea1f85",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:23:08.214166Z",
+     "iopub.status.busy": "2026-03-01T22:23:08.213047Z",
+     "iopub.status.idle": "2026-03-01T22:23:08.253329Z",
+     "shell.execute_reply": "2026-03-01T22:23:08.252483Z"
+    },
+    "papermill": {
+     "duration": 0.047333,
+     "end_time": "2026-03-01T22:23:08.255249",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:08.207916",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "distance_from_home                float64\n",
+       "distance_from_last_transaction    float64\n",
+       "ratio_to_median_purchase_price    float64\n",
+       "repeat_retailer                     int64\n",
+       "used_chip                           int64\n",
+       "used_pin_number                     int64\n",
+       "online_order                        int64\n",
+       "fraud                               int64\n",
+       "dtype: object"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# change binary variables data type from float to int\n",
+    "binary_col = ['repeat_retailer','used_chip','used_pin_number','online_order','fraud']\n",
+    "for col in binary_col:\n",
+    "    df[col] = df[col].astype(int)\n",
+    "df.dtypes"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "84dbd25c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:23:08.264573Z",
+     "iopub.status.busy": "2026-03-01T22:23:08.264247Z",
+     "iopub.status.idle": "2026-03-01T22:23:08.314267Z",
+     "shell.execute_reply": "2026-03-01T22:23:08.313012Z"
+    },
+    "papermill": {
+     "duration": 0.057131,
+     "end_time": "2026-03-01T22:23:08.316239",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:08.259108",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "repeat_retailer\n",
+      "1    0.881536\n",
+      "0    0.118464\n",
+      "Name: proportion, dtype: float64\n",
+      "used_chip\n",
+      "0    0.649601\n",
+      "1    0.350399\n",
+      "Name: proportion, dtype: float64\n",
+      "used_pin_number\n",
+      "0    0.899392\n",
+      "1    0.100608\n",
+      "Name: proportion, dtype: float64\n",
+      "online_order\n",
+      "1    0.650552\n",
+      "0    0.349448\n",
+      "Name: proportion, dtype: float64\n",
+      "fraud\n",
+      "0    0.912597\n",
+      "1    0.087403\n",
+      "Name: proportion, dtype: float64\n"
+     ]
+    }
+   ],
+   "source": [
+    "# check unique value distributions % for those binary variables\n",
+    "for col in binary_col:\n",
+    "    print(df[col].value_counts(normalize=True))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9e1b2724",
+   "metadata": {
+    "papermill": {
+     "duration": 0.00382,
+     "end_time": "2026-03-01T22:23:08.324127",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:08.320307",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# DATA PRE-PROCESSING"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "c4b99918",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:23:08.333884Z",
+     "iopub.status.busy": "2026-03-01T22:23:08.333524Z",
+     "iopub.status.idle": "2026-03-01T22:23:10.661317Z",
+     "shell.execute_reply": "2026-03-01T22:23:10.660480Z"
+    },
+    "papermill": {
+     "duration": 2.335245,
+     "end_time": "2026-03-01T22:23:10.663578",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:08.328333",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# train/test data split\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "y = df['fraud']\n",
+    "x = df.drop(columns=['fraud'])\n",
+    "x_train, x_test, y_train, y_test = train_test_split(x,y, \n",
+    "                                                    test_size=0.2, \n",
+    "                                                    stratify=y, #Keeps the fraud rate the same in train and test\n",
+    "                                                    random_state=84)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "aa223937",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004033,
+     "end_time": "2026-03-01T22:23:10.671944",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:10.667911",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# MODEL DEVELOPMENT"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "79f2a1a3",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:23:10.681907Z",
+     "iopub.status.busy": "2026-03-01T22:23:10.680738Z",
+     "iopub.status.idle": "2026-03-01T22:23:10.964131Z",
+     "shell.execute_reply": "2026-03-01T22:23:10.963257Z"
+    },
+    "papermill": {
+     "duration": 0.290701,
+     "end_time": "2026-03-01T22:23:10.966357",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:10.675656",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# XGBoost (no scaling is needed for tree-based method)\n",
+    "from xgboost import XGBClassifier\n",
+    "\n",
+    "neg = (y_train == 0).sum()\n",
+    "pos = (y_train == 1).sum()\n",
+    "\n",
+    "model = XGBClassifier(\n",
+    "    # n_estimators=400,#100,200,400,500\n",
+    "    # max_depth=4,#3-6\n",
+    "    # learning_rate=0.05,#0.03-0.1\n",
+    "    # subsample=0.8,#0.6-0.9\n",
+    "    # colsample_bytree=0.8,\n",
+    "    eval_metric=\"aucpr\",\n",
+    "    scale_pos_weight=neg/pos,\n",
+    "    random_state=84,\n",
+    "    n_jobs=-1\n",
+    ")\n",
+    "\n",
+    "# model.fit(x_train, y_train)\n",
+    "# y_pred_scr = model.predict_proba(x_test)[:, 1]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "ad5bc01c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:23:10.975851Z",
+     "iopub.status.busy": "2026-03-01T22:23:10.975492Z",
+     "iopub.status.idle": "2026-03-01T22:24:40.820349Z",
+     "shell.execute_reply": "2026-03-01T22:24:40.819651Z"
+    },
+    "papermill": {
+     "duration": 89.856152,
+     "end_time": "2026-03-01T22:24:40.826432",
+     "exception": false,
+     "start_time": "2026-03-01T22:23:10.970280",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Best PR-AUC: 0.9997441383871891\n",
+      "Best params: {'n_estimators': 100, 'max_depth': 4}\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Random Search for best hyperparameters\n",
+    "from sklearn.model_selection import RandomizedSearchCV\n",
+    "from sklearn.model_selection import StratifiedKFold\n",
+    "\n",
+    "skf = StratifiedKFold(\n",
+    "    n_splits=5,\n",
+    "    shuffle=True,\n",
+    "    random_state=84\n",
+    ")\n",
+    "\n",
+    "params = {\n",
+    "    'n_estimators': [100,200,400],\n",
+    "    'max_depth': [3,4,5],\n",
+    "    #'learning_rate': [0.03,0.05,0.1],\n",
+    "    #'subsample': [0.6,0.8,0.9]\n",
+    "}\n",
+    "\n",
+    "search = RandomizedSearchCV(\n",
+    "    estimator=model,\n",
+    "    param_distributions=params,\n",
+    "    n_iter=5,\n",
+    "    scoring=\"average_precision\",\n",
+    "    cv=skf,\n",
+    "    random_state=84,\n",
+    "    n_jobs=-1\n",
+    ")\n",
+    "\n",
+    "search.fit(x_train, y_train)\n",
+    "\n",
+    "print(\"Best PR-AUC:\", search.best_score_)\n",
+    "print(\"Best params:\", search.best_params_)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "f70061be",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:24:40.835617Z",
+     "iopub.status.busy": "2026-03-01T22:24:40.835275Z",
+     "iopub.status.idle": "2026-03-01T22:24:41.025742Z",
+     "shell.execute_reply": "2026-03-01T22:24:41.025003Z"
+    },
+    "papermill": {
+     "duration": 0.197764,
+     "end_time": "2026-03-01T22:24:41.028053",
+     "exception": false,
+     "start_time": "2026-03-01T22:24:40.830289",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# final model with the best parameters\n",
+    "final_model = search.best_estimator_\n",
+    "y_pred_scr = final_model.predict_proba(x_test)[:, 1]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "b3d99c83",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-01T22:24:41.038632Z",
+     "iopub.status.busy": "2026-03-01T22:24:41.037789Z",
+     "iopub.status.idle": "2026-03-01T22:24:41.126030Z",
+     "shell.execute_reply": "2026-03-01T22:24:41.125025Z"
+    },
+    "papermill": {
+     "duration": 0.095238,
+     "end_time": "2026-03-01T22:24:41.127987",
+     "exception": false,
+     "start_time": "2026-03-01T22:24:41.032749",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "PR-AUC: 0.9997205014643301\n"
+     ]
+    }
+   ],
+   "source": [
+    "# calculate PR_AUC for test data\n",
+    "from sklearn.metrics import precision_recall_curve, average_precision_score\n",
+    "\n",
+    "precision, recall, thresholds = precision_recall_curve(\n",
+    "    y_test,\n",
+    "    y_pred_scr\n",
+    ")\n",
+    "\n",
+    "pr_auc = average_precision_score(y_test, y_pred_scr)\n",
+    "\n",
+    "print(\"PR-AUC:\", pr_auc)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "databundleVersionId": 3647496,
+     "datasetId": 2156255,
+     "sourceId": 3594108,
+     "sourceType": "datasetVersion"
+    }
+   ],
+   "dockerImageVersionId": 31259,
+   "isGpuEnabled": false,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.12"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 102.964952,
+   "end_time": "2026-03-01T22:24:43.750441",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2026-03-01T22:23:00.785489",
+   "version": "2.6.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
